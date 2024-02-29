@@ -11,7 +11,7 @@ const LocalStrategy = require('passport-local');
 
 const app = express();
 
-app.set('view engine', 'pug'); 
+app.set('view engine', 'pug');
 app.set('views', './views/pug');
 
 fccTesting(app); //For FCC testing purposes
@@ -30,7 +30,17 @@ myDB(async client=> {
   const myDataBase = await client.db('database').collection('users')
 
   app.route('/').get((req, res) => {
-    res.render('index', { title:'Connected to Database', message: 'Please log in', showLogin: true }); 
+    res.render('index', { title:'Connected to Database', message: 'Please log in', showLogin: true });
+  });
+
+  app.route('/login').post(passport.authenticate('local', { failureRedirect: '/' }),
+    (req, res) => {
+      res.redirect('/profile');
+    }
+  );
+
+  app.route('/profile').get((req, res) => {
+    req.isAuthenticated() ? res.render('/profile', { user: req.user }) : res.redirect('/');
   });
 
   app.post('/login')
@@ -38,7 +48,7 @@ myDB(async client=> {
   passport.serializeUser((user, done) => {
     done(null, user._id);
   });
-  
+
   passport.deserializeUser((id, done) => {
     // myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
       done(null,doc);
@@ -51,8 +61,8 @@ myDB(async client=> {
   });
 });
 
-passport.initialize();
-passport.session();
+app.use(passport.initialize());
+app.use(passport.session());
 
 passport.use(new LocalStrategy((username, password, done) => {
   myDataBase.findOne({ username: username }, (err, user) => {
