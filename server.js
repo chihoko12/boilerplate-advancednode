@@ -30,8 +30,10 @@ myDB(async client=> {
   const myDataBase = await client.db('database').collection('users')
 
   app.route('/').get((req, res) => {
-    res.render('index', { title:'Connected to Database', message: 'Please log in' }); 
+    res.render('index', { title:'Connected to Database', message: 'Please log in', showLogin: true }); 
   });
+
+  app.post('/login')
 
   passport.serializeUser((user, done) => {
     done(null, user._id);
