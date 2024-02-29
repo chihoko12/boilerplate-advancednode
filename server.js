@@ -29,6 +29,16 @@ app.use(session({
 myDB(async client=> {
   const myDataBase = await client.db('database').collection('users')
 
+  passport.use(new LocalStrategy((username, password, done) => {
+    myDataBase.findOne({ username: username }, (err, user) => {
+      console.log(`User ${username} attempted to log in.`);
+      if (err) return done(err);
+      if (!user) return done(null, false);
+      if (password != user.password) return done(null, false);
+      return done(null, user);
+    });
+  }));
+
   app.route('/').get((req, res) => {
     res.render('index', { title:'Connected to Database', message: 'Please log in', showLogin: true });
   });
@@ -40,7 +50,7 @@ myDB(async client=> {
   );
 
   app.route('/profile').get((req, res) => {
-    req.isAuthenticated() ? res.render('/profile', { user: req.user }) : res.redirect('/');
+    req.isAuthenticated() ? res.render('profile', { user: req.user }) : res.redirect('/');
   });
 
   app.post('/login')
@@ -50,10 +60,10 @@ myDB(async client=> {
   });
 
   passport.deserializeUser((id, done) => {
-    // myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
+    myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
       done(null,doc);
     });
-  // });
+  });
 
 }).catch(e => {
   app.route('/').get((req,res) => {
@@ -63,16 +73,6 @@ myDB(async client=> {
 
 app.use(passport.initialize());
 app.use(passport.session());
-
-passport.use(new LocalStrategy((username, password, done) => {
-  myDataBase.findOne({ username: username }, (err, user) => {
-    console.log(`User ${username} attempted to log in.`);
-    if (err) return done(err);
-    if (!user) return done(null, false);
-    if (password != user.password) return done(null, false);
-    return done(null, user);
-  });
-}));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
