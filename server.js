@@ -25,7 +25,9 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: true,
   saveUninitialized: true,
-  cookie: { secure: false }
+  cookie: { secure: false },
+  key:'express.sid',
+  store:store
 }));
 
 app.use(passport.initialize());
@@ -54,12 +56,15 @@ myDB(async client=> {
   auth(app, myDataBase);
 
   let currentUsers = 0;
-  io.on('connection', socket => {
+  io.on('connection', (socket) => {
     ++currentUsers;
     io.emit('user', {
       username: socket.request.user.username,
       currentUsers,
       connected: true
+    });
+    socket.on('chat message', (message) => {
+      io.emit('chat message', { username: socket.request.username, message });
     });
     console.log('A user has connected');
     socket.on('disconnect', () => {
@@ -79,7 +84,7 @@ myDB(async client=> {
   });
 });
 
-function onAuthorizeSuccess(data, message, error, accept) {
+function onAuthorizeSuccess(data, accept) {
   console.log('successful connection to socket.io');
   accept(null, true);
 }
